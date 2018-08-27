@@ -60,19 +60,26 @@ while cap.isOpened():
 
 	try:
 		frame, point = get_lane(frame)
-#get_direction(point)
-#to_arduino(direction)
-#print(point, ', ', curve)
-#to_arduino(str(curve))
 
 		if point == -1:
 			print("no left no right")
 		elif point == -2:
-			print("no left")
+			if curve > 40 and curve < 140:
+				curve-=2
+				to_arduino(str(curve))
+				print("no left")
 		elif point == -3:
-			print("no right")
+			if curve > 40 and curve < 140:
+				curve+=2
+				to_arduino(str(curve))
+				print("no right")
 		else:
 			print("left and right")
+			get_direction(point)
+#to_arduino(direction)
+			print(point, ', ', curve)
+			to_arduino(str(curve))
+
 
 	except:
 		print("error")
