@@ -111,7 +111,7 @@ def get_lane(image):
 		print("here3")
 		return image, int(-3)
 	'''
-	print(L_lines, "...", R_lines)
+	#print(L_lines, "...", R_lines)
 
 	if len(L_lines) == 0 and len(R_lines) == 0:
 		return image, -1

@@ -29,7 +29,7 @@ void setup(void)
   myservo.attach(SERVO);        
 
   // 임시적으로 GO
-  speed = 200;
+  speed = 140;
   SPI.attachInterrupt();
 }
 
@@ -56,16 +56,18 @@ void car_start(){
 
 void loop(void)
 {
+   digitalWrite(A1, LOW);         
+  digitalWrite(A2, HIGH); 
+  analogWrite(L293N_ENA, speed);
   if(process)
   {
- //   buf[idx] = 0;
     process = false;
     Serial.println(buf);
     idx = 0;
-    car_start();
+    //car_start();
     curve = atoi(buf);
-    Serial.print("curve  ");
-    Serial.println(curve);
+    //Serial.print("curve  ");
+    //Serial.println(curve);
     myservo.write(curve);
   }
 }

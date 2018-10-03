@@ -5,7 +5,7 @@ import spidev
 from ctypes import *
 from line_test import get_lane
 
-width, height = 800, 600
+width, height = 800,600
 ip = '192.168.43.160'
 
 global CAR_CENTER, curve
@@ -50,6 +50,10 @@ def get_direction(point):
 #cap = cv2.VideoCapture('challenge_video.mp4')
 #cap = cv2.VideoCapture('videoplayback.mp4')
 cap = cv2.VideoCapture(1)
+
+#width = cap.set(3,1280)
+#height = cap.set(4,720)
+
 print(cap.isOpened())
 
 while cap.isOpened():

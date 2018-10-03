@@ -27,7 +27,6 @@ def to_arduino(msg):
 		i += 1
 
 	msglist.insert(i, ord('\0'))
-	print(msg, " : ", msglist)
 	spi.xfer(msglist)
 
 def get_direction(point):
@@ -47,7 +46,8 @@ def get_direction(point):
 		if curve > 40 and curve < 140:
 			curve+=2
 
-cap = cv2.VideoCapture('challenge_video.mp4')
+#cap = cv2.VideoCapture('challenge_video.mp4')
+cap = cv2.VideoCapture('videoplayback.mp4')
 #cap = cv2.VideoCapture(1)
 print(cap.isOpened())
 
@@ -59,10 +59,25 @@ while cap.isOpened():
 
 	try:
 		frame, point = get_lane(frame)
-		get_direction(point)
+
+		if point == -1:
+			print("no left no right")
+		elif point == -2:
+			if curve > 40 and curve < 140:
+				curve-=2
+				to_arduino(str(curve))
+				print("no left")
+		elif point == -3:
+			if curve > 40 and curve < 140:
+				curve+=2
+				to_arduino(str(curve))
+				print("no right")
+		else:
+			print("left and right")
+			get_direction(point)
 #to_arduino(direction)
-		print(point, ', ', curve)
-		to_arduino(str(curve))
+			print(point, ', ', curve)
+			to_arduino(str(curve))
 
 	except:
 		print("error")
