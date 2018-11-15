@@ -3,17 +3,16 @@ import socket
 import sys
 import spidev
 import threading
+import os
 from ctypes import *
 from line import get_lane
-
-Encode = {'A' : 370, 'B' : 370, 'C' : 280, 'E' : 30}
 
 width, height = 800, 600
 ip = '192.168.43.160'
 
 BUF_LEN = 15
 
-CAR_CENTER, curve = int(390), int(90)
+CAR_CENTER, curve = int(380), int(90)
 isDriving = 0
 
 spi = spidev.SpiDev()
@@ -60,27 +59,54 @@ STOP_SIGN = False;
 TRAFFIC_LIGHT = False;
 
 def from_YOLO():
-	global CAR, PERSON, STOP_SIGN, TRAFFIC_LIGHT
 	while True:
 		f = open("/home/nvidia/ACCAR/Final/log.txt", "r+")
-		data = f.read()
-
-		if data != "":
-			print(data) 
-
-			if(data == 'car'):
-				CAR = True
-			elif(data == 'person'):
-				PERSON = True
-			elif(data == 'stop_sign'):
-				STOP_SIGN = True
-			elif(data == 'traffic_light'):
-				TRAFFIC_LIGHT = True
-
+		s = f.read()
+		if s != "":
+			print(s) 
+			to_arduino(s)
 			f.truncate(0)	
 
 		f.close()
+'''	global CAR, PERSON, STOP_SIGN, TRAFFIC_LIGHT
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	server_address = (ip, 8889)
+	print("YOLO socket listening...")
+	sock.bind(server_address)
+	sock.listen(1)
+	
+	try:
+		
+		while True:	
+			client, address = sock.accept()
 
+			data = client.recv(BUF_LEN)
+			
+			if not data:
+				break
+
+			data = data[:-1]
+
+			print(data.decode())
+			to_arduino(data.decode())
+'''
+#if(data == "car")
+#				CAR = True
+#			else if(data == "person")
+#				Person = True
+#			else if(data == "stop_sign")
+#				stop_sign = True
+#			else if(data == "traffic_light")
+#				traffic_light = True
+#			print(data.decode())
+'''
+	except:
+		print("close YOLO")
+		client.close()
+		sock.close()
+		exit(1)
+'''
 def to_arduino(msg):
 	msglist = list()
 	msglist = []
@@ -116,11 +142,11 @@ def get_direction(point):
 #cap = cv2.VideoCapture('videoplayback.mp4')
 #cap = cv2.VideoCapture('challenge_video.mp4')
 
+
 def main():
 	global isDriving
-	global CAR, PERSON, STOP_SIGN, TRAFFIC_LIGHT
 
-	cap = cv2.VideoCapture(2)
+	cap = cv2.VideoCapture(1)
 	print(cap.isOpened())
 	from_android()
 	isDriving = 1
@@ -131,46 +157,30 @@ def main():
 
 			ret, frame = cap.read()
 			frame = cv2.resize(frame, (width, height))
+			cv2.imwrite("temp.jpg", frame)
 
-			if(CAR == True):
-				to_arduino('car')
-				CAR = False
-				
-			elif(PERSON == True):
-				to_arduino('person')
-				PERSON = False
+			try:
+				frame, point = get_lane(frame)
 
-			elif(STOP_SIGN == True):
-				to_arduino('stop_sign')
-				STOP_SIGN = False
+				print("point, ", point)
 
-			elif(TRAFFIC_LIGHT == True):
-				to_arduino('traffic_light')
-				TRAFFIC_LIGHT = False
-			
-			else:
-				try:
-					frame, point = get_lane(frame)
+				if point == -1:
+					print("no left no right")
 
-					print("point, ", point)
+				elif point == -2:
+					to_arduino("left");
+					print("no left")
 
-					if point == -1:
-						print("no left no right")
+				elif point == -3:
+					to_arduino("right");
+					print("no right")
 
-					elif point == -2:
-						to_arduino("left");
-						print("no left")
+				else:
+					get_direction(point)
 
-					elif point == -3:
-						to_arduino("right");
-						print("no right")
-
-					else:
-						get_direction(point)
-
-				except:
-					#print("error")
-					pass
+			except:
+				#print("error")
+				pass
 
 			cv2.imshow('0825', frame)
 			if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -179,12 +189,11 @@ def main():
 		cv2.destroyAllWindows()
 		cap.release()
 
-
 MAIN = threading.Thread(target=main)
 YOLO = threading.Thread(target=from_YOLO)
 
-MAIN.start()
 YOLO.start()
+MAIN.start()
 
-MAIN.join()
 YOLO.join()
+MAIN.join()

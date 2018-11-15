@@ -13,7 +13,7 @@ ip = '192.168.43.160'
 
 BUF_LEN = 15
 
-CAR_CENTER, curve = int(390), int(90)
+CAR_CENTER, curve = int(380), int(90)
 isDriving = 0
 
 spi = spidev.SpiDev()
@@ -61,25 +61,42 @@ TRAFFIC_LIGHT = False;
 
 def from_YOLO():
 	global CAR, PERSON, STOP_SIGN, TRAFFIC_LIGHT
-	while True:
-		f = open("/home/nvidia/ACCAR/Final/log.txt", "r+")
-		data = f.read()
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	server_address = (ip, 8889)
+	print("YOLO socket listening...")
+	sock.bind(server_address)
+	sock.listen(1)
+	
+	try:
+		
+		while True:	
+			client, address = sock.accept()
+			#print("YOLO Connected")
 
-		if data != "":
-			print(data) 
+			data = client.recv(BUF_LEN)
+			
+			if not data:
+				break
 
-			if(data == 'car'):
+			data = data[:-1]
+			print(data.decode())
+
+			if(data.decode() == 'car'):
 				CAR = True
-			elif(data == 'person'):
+			elif(data.decode() == 'person'):
 				PERSON = True
-			elif(data == 'stop_sign'):
+			elif(data.decode() == 'stop_sign'):
 				STOP_SIGN = True
-			elif(data == 'traffic_light'):
+			elif(data.decode() == 'traffic_light'):
 				TRAFFIC_LIGHT = True
+				
 
-			f.truncate(0)	
-
-		f.close()
+	except:
+		print("close Android")
+		client.close()
+		sock.close()
+		exit(1)
 
 def to_arduino(msg):
 	msglist = list()
@@ -119,8 +136,7 @@ def get_direction(point):
 def main():
 	global isDriving
 	global CAR, PERSON, STOP_SIGN, TRAFFIC_LIGHT
-
-	cap = cv2.VideoCapture(2)
+	cap = cv2.VideoCapture(1)
 	print(cap.isOpened())
 	from_android()
 	isDriving = 1
@@ -135,42 +151,40 @@ def main():
 			if(CAR == True):
 				to_arduino('car')
 				CAR = False
-				
 			elif(PERSON == True):
 				to_arduino('person')
 				PERSON = False
-
 			elif(STOP_SIGN == True):
 				to_arduino('stop_sign')
 				STOP_SIGN = False
-
 			elif(TRAFFIC_LIGHT == True):
 				to_arduino('traffic_light')
 				TRAFFIC_LIGHT = False
-			
-			else:
-				try:
-					frame, point = get_lane(frame)
 
-					print("point, ", point)
 
-					if point == -1:
-						print("no left no right")
 
-					elif point == -2:
-						to_arduino("left");
-						print("no left")
+			try:
+				frame, point = get_lane(frame)
 
-					elif point == -3:
-						to_arduino("right");
-						print("no right")
+				print("point, ", point)
 
-					else:
-						get_direction(point)
+				if point == -1:
+					print("no left no right")
 
-				except:
-					#print("error")
-					pass
+				elif point == -2:
+					to_arduino("left");
+					print("no left")
+
+				elif point == -3:
+					to_arduino("right");
+					print("no right")
+
+				else:
+					get_direction(point)
+
+			except:
+				#print("error")
+				pass
 
 			cv2.imshow('0825', frame)
 			if cv2.waitKey(1) & 0xFF == ord('q'):
